@@ -32,8 +32,9 @@ def apply_df_norm(df, column_name):
 def lpf(array, order=4, fc=2):
     array = array.ravel()
 
-    # TODO: Implement filter
+    # TODO: Implement filter (order 2)
     # Notes: EMG 0.5-1 Hz
+    # Online implementation need optimization to make things work
 
     # Get filter coefficient
     b, a = sn.iirfilter(N=order, Wn=fc, fs=1000,
@@ -44,6 +45,7 @@ def lpf(array, order=4, fc=2):
 
     # Remove negative to 0
     out = np.where(out < 0, 0, out)
+
     return out
 
 
@@ -66,11 +68,6 @@ def thresholding(array, time_array, threshold, width=0.01):
 
     df = pd.DataFrame(
         {"Time": time_array[index[0]], "Threshold": array[index[0]]})
-
-    # Creating a representation of place in time
-    # zeros_array = np.zeros_like(array)
-    # for i in index[0]:
-    #     zeros_array[i] = array[i]
 
     return df
 
