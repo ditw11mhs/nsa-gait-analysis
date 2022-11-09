@@ -24,8 +24,7 @@ def main():
         c8, c9 = st.columns([1, 2])
         c10, c11 = st.columns(2)
 
-        order = c5.number_input(
-            "LPF Filter Order", value=3, min_value=1, max_value=10)
+        order = c5.number_input("LPF Filter Order", value=3, min_value=1, max_value=10)
         fc = c5.number_input(
             "LPF Filter Cutoff Frequency",
             value=2.0,
@@ -38,17 +37,13 @@ def main():
         file_df["Filtered Heel"] = logic.apply_df_lpf(
             file_df, "Heel", order=order, fc=fc
         )
-        file_df["Filtered Toe"] = logic.apply_df_lpf(
-            file_df, "Toe", order=order, fc=fc)
+        file_df["Filtered Toe"] = logic.apply_df_lpf(file_df, "Toe", order=order, fc=fc)
         c6.line_chart(file_df, x="Time", y=["Filtered Heel", "Filtered Toe"])
 
         c7.markdown("#### Normalization")
-        file_df["Normalized Heel"] = logic.apply_df_norm(
-            file_df, "Filtered Heel")
-        file_df["Normalized Toe"] = logic.apply_df_norm(
-            file_df, "Filtered Toe")
-        c7.line_chart(file_df, x="Time", y=[
-                      "Normalized Heel", "Normalized Toe"])
+        file_df["Normalized Heel"] = logic.apply_df_norm(file_df, "Filtered Heel")
+        file_df["Normalized Toe"] = logic.apply_df_norm(file_df, "Filtered Toe")
+        c7.line_chart(file_df, x="Time", y=["Normalized Heel", "Normalized Toe"])
 
         threshold = c8.number_input(
             "Gait Threshold", value=0.05, min_value=0.0, max_value=1.0, format="%f"
@@ -68,15 +63,21 @@ def main():
             file_df, "Normalized Toe", threshold, width
         )
 
-        c_heel = utils.df_line(file_df, "Heel")
         c_norm_heel = utils.df_line(file_df, "Normalized Heel")
+        c_norm_toe = utils.df_line(file_df, "Normalized Toe")
         c_th_heel = (
             alt.Chart(th_heel)
             .mark_circle(color="red")
             .encode(x="Time", y="Threshold", tooltip=["Time", "Threshold"])
             .interactive()
         )
-        layer = alt.layer(c_heel, c_norm_heel, c_th_heel)
+        c_th_toe = (
+            alt.Chart(th_toe)
+            .mark_circle(color="red")
+            .encode(x="Time", y="Threshold", tooltip=["Time", "Threshold"])
+            .interactive()
+        )
+        layer = alt.layer(c_norm_heel, c_norm_toe, c_th_toe, c_th_heel)
 
         c9.altair_chart(layer, use_container_width=True)
         # c9.line_chart(file_df, x="Time", y=["Thresholded Heel", "Normalized Heel"])
