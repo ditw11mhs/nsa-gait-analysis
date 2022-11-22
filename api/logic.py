@@ -7,10 +7,25 @@ from scipy import signal as sn
 @st.cache(allow_output_mutation=True)
 def txt_to_df(file):
     data_array = np.loadtxt(file)
-    used_data_array = data_array[:, :6]
     dataframe = pd.DataFrame(
-        used_data_array, columns=[
-            "Time", "Heel", "Toe", "Hip", "Knee", "Ankle"]
+        data_array,
+        columns=[
+            "Time",
+            "Heel",
+            "Toe",
+            "Hip",
+            "Knee",
+            "Ankle",
+            "Gluteus Maximus",
+            "Bicep Femoris Short",
+            "Bicep Femoris Long",
+            "Vastus Medialis",
+            "Vastus Lateralis",
+            "Rectus Remoris",
+            "Soleus",
+            "Gastronecmius",
+            "Tibialis Anterior",
+        ],
     )
     return dataframe
 
@@ -55,14 +70,13 @@ def apply_df_lpf(df, column_name, order, fc):
     return filtered_array
 
 
-def thresholding(array, time_array, threshold, width=0.01):
-    half_width = width / 2
-    # Get the index of points within the range of thershold +- width
-
-    index = np.where(
-        np.logical_and(array < threshold + half_width,
-                       array > threshold - half_width)
-    )
+def thresholding(array, time_array, threshold):
+    # Use falling and rising edge detection with convolve trick
+    sign = array > threshold
+    convolve = np.convolve(sign, [1, -1])
+    index = np.array(np.where(np.logical_or(
+        convolve == 1, convolve == -1))) - 1
+    print(index)
 
     # TODO: Add logic to get the first sample that is bigger than threshold
 
@@ -72,8 +86,9 @@ def thresholding(array, time_array, threshold, width=0.01):
     return df
 
 
-def apply_df_thresholding(df, column_name, threshold, width):
+def apply_df_thresholding(df, column_name, threshold):
     array = df[column_name].to_numpy()
     time_array = df["Time"].to_numpy()
-    thresholded_array = thresholding(array, time_array, threshold, width)
+    thresholded_array = thresholding(array, time_array, threshold)
+
     return thresholded_array
