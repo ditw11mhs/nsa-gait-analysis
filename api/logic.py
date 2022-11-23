@@ -44,6 +44,18 @@ def apply_df_norm(df, column_name):
     return norm_array
 
 
+def apply_df_rect(df, column_name):
+    array = df[column_name].to_numpy()
+    rect_array = np.absolute(array)
+    return rect_array
+
+
+def apply_df_mav(df, column_name, window):
+    array = df[column_name].to_numpy()
+    mav_array = moving_average(array, window)
+    return mav_array
+
+
 def lpf(array, order=4, fc=2):
     array = array.ravel()
 
@@ -249,3 +261,18 @@ def min_max_stance_swing(array, to):
         index_max_array_swing,
     ]
     return min_max, index_min_max
+
+
+def moving_average(array, window):
+    return np.convolve(array, np.ones(window), "same") / window
+
+
+def muscle_thresholding(array, threshold):
+    out = array >= threshold
+    return out * 1
+
+
+def apply_df_musscle_th(df, column_name, threshold):
+    array = df[column_name].to_numpy()
+    out = muscle_thresholding(array, threshold)
+    return out

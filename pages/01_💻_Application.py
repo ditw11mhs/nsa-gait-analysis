@@ -2,6 +2,7 @@ import altair as alt
 import streamlit as st
 import plotly.graph_objects as go
 import plotly.express as px
+import pandas as pd
 from api import logic, utils
 
 
@@ -13,6 +14,7 @@ def main():
 
         st.subheader("Raw Data")
         # Raw Data visualization
+
         c1, c2 = st.columns(2)
         c3, c4 = st.columns(2)
         c1.line_chart(file_df, x="Time", y=["Heel", "Toe"])
@@ -91,8 +93,7 @@ def main():
 
         c9.plotly_chart(threshold_fig, use_container_width=True)
 
-        c10, c11 = st.columns([1, 2])
-        cycle = c10.number_input("Cycle", min_value=1)
+        cycle = st.number_input("Cycle", min_value=1)
         gait_df, gait_param_df = logic.split_gait_cycle(
             file_df["Normalized Heel"],
             file_df["Normalized Toe"],
@@ -117,7 +118,7 @@ def main():
             )
         )
 
-        c11.plotly_chart(gait_fig, use_container_width=True)
+        st.plotly_chart(gait_fig, use_container_width=True)
         (
             cycle_joint_df,
             knee_param,
@@ -163,6 +164,79 @@ def main():
             )
         )
         st.plotly_chart(hip_fig, use_container_width=True)
+
+        ####### MUSCLE ACTIVATION#####
+        ##############################
+
+        st.subheader("Muscle Activation")
+        c1m, c2m, c3m = st.columns(3)
+
+        # Filter
+        muscle_col = [
+            "Gluteus Maximus",
+            "Bicep Femoris Short",
+            "Bicep Femoris Long",
+            "Vastus Medialis",
+            "Vastus Lateralis",
+            "Rectus Remoris",
+            "Soleus",
+            "Gastronecmius",
+            "Tibialis Anterior",
+        ]
+
+        for muscle, col in zip(
+            muscle_col, [c1m, c2m, c3m, c1m, c2m, c3m, c1m, c2m, c3m]
+        ):
+            col.line_chart(file_df, x="Time", y=muscle)
+
+        st.markdown("#### Rectification and Filtering")
+        mav_window = st.number_input("MAV window", value=150, min_value=1)
+
+        for muscle in muscle_col:
+            file_df[f"Rectified {muscle}"] = logic.apply_df_rect(
+                file_df, muscle)
+            file_df[f"Filtered {muscle}"] = logic.apply_df_mav(
+                file_df, f"Rectified {muscle}", mav_window
+            )
+        c4m, c5m, c6m = st.columns(3)
+
+        st.markdown("#### Cycle and Thresholding")
+        muscle_th = st.number_input(
+            "Muscle Thresholding", value=0.7, min_value=0.0, max_value=1.0
+        )
+        for muscle, col in zip(
+            muscle_col, [c4m, c5m, c6m, c4m, c5m, c6m, c4m, c5m, c6m]
+        ):
+            col.line_chart(file_df, x="Time", y=f"Filtered {muscle}")
+
+        c7m, c8m, c9m = st.columns(3)
+        ic, ho, ff, to = logic.gait_param(index_heel, index_toe)
+
+        for muscle, col in zip(
+            muscle_col, [c7m, c8m, c9m, c7m, c8m, c9m, c7m, c8m, c9m]
+        ):
+            muscle_act_cycle = logic.normalize(
+                logic.split_gait(file_df[f"Filtered {muscle}"], ic, cycle)
+            )
+            muscle_act_cycle_time = logic.split_gait(
+                file_df["Time"], ic, cycle)
+
+            muscle_thresholding = logic.muscle_thresholding(
+                muscle_act_cycle, muscle_th)
+
+            muscle_df = pd.DataFrame(
+                {
+                    "Time": muscle_act_cycle_time,
+                    f"Filtered {muscle} Cycle {cycle}": muscle_act_cycle,
+                    f"Thresholding {muscle}": muscle_thresholding,
+                }
+            )
+            col.line_chart(
+                muscle_df,
+                x="Time",
+                y=[f"Filtered {muscle} Cycle {cycle}",
+                    f"Thresholding {muscle}"],
+            )
 
 
 if __name__ == "__main__":
